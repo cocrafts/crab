@@ -1,0 +1,10 @@
+{
+  "extends": "@metacraft/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "core": ["./core"],
+      "core/*": ["./core/*"]
+    }
+  }
+}

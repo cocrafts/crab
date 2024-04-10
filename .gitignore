@@ -1,0 +1,7 @@
+# editor
+.zed
+.vscode
+
+# workspace
+.yarn
+node_modules

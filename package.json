@@ -1,0 +1,23 @@
+{
+  "name": "crab",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "workspaces": [
+    "examples/*",
+    "src"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "packageManager": "yarn@4.1.1",
+  "devDependencies": {
+    "@metacraft/eslint-config": "^0.0.8",
+    "@metacraft/tsconfig": "^0.0.2",
+    "eslint": "^8.0.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.4"
+  }
+}
