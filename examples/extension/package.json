@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "BUILD_TARGET=extension && metacraft bundle && cp manifest.json metacraft"
   },
   "author": "",
   "license": "MIT",

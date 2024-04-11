@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Crab - Extension Example",
+  "version": "0.0.1",
+  "author": "https://metacraft.studio",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none';"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open Crab"
+  },
+  "host_permissions": ["file://*/*", "http://*/*", "https://*/*"],
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "clipboardWrite",
+    "identity",
+    "storage",
+    "unlimitedStorage",
+    "alarms"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "js": ["contentScript.js"],
+      "matches": ["file://*/*", "http://*/*", "https://*/*"],
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injection.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
+
