@@ -8,15 +8,19 @@
     "src"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --passWithNoTests"
   },
   "author": "",
   "license": "MIT",
   "packageManager": "yarn@4.1.1",
   "devDependencies": {
+    "@babel/preset-env": "^7.24.4",
+    "@babel/preset-typescript": "^7.24.1",
     "@metacraft/eslint-config": "^0.0.8",
     "@metacraft/tsconfig": "^0.0.2",
+    "@types/jest": "^29.5.12",
     "eslint": "^8.0.0",
+    "jest": "^29.7.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.4"
   }
