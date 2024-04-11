@@ -8,7 +8,14 @@
   },
   "author": "",
   "license": "MIT",
-  "packages": {
-    "@metacraft/crab": "*"
+  "dependencies": {
+    "@metacraft/crab": "*",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.266",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0"
   }
 }

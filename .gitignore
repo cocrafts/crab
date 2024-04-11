@@ -5,3 +5,6 @@
 # workspace
 .yarn
 node_modules
+
+# dist
+**/metacraft

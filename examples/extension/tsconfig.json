@@ -1,3 +1,8 @@
 {
-  "extends": "@metacraft/tsconfig/base.json"
+  "extends": "@metacraft/tsconfig/base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": "src"
+  },
+  "exclude": ["metacraft"]
 }

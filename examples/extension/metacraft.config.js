@@ -1,16 +1,16 @@
 const createEntries = (config) => {
 	config.entry.background = {
-		import: './background.ts',
+		import: 'background.ts',
 		filename: 'background.js',
 	};
 
 	config.entry.contentScript = {
-		import: './contentScript.ts',
+		import: 'contentScript.tsx',
 		filename: 'contentScript.js',
 	};
 
 	config.entry.injection = {
-		import: './injection.ts',
+		import: 'injection.ts',
 		filename: 'injection.js',
 	};
 
