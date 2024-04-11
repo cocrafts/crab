@@ -1,3 +1,5 @@
+import type { RawRequest, Request, RequestContext, Response } from './types';
+
 export interface Channel {
 	request: <T>(payload: RawRequest, timeout: number) => Promise<T>;
 }
@@ -83,23 +85,3 @@ export class AsyncChannel implements Channel {
 		clearInterval(this.timer as never);
 	}
 }
-
-export type RawRequest = Partial<Request>;
-
-export type Request = {
-	requestId: string;
-} & Record<string, unknown>;
-
-export type Response = {
-	requestId: string;
-	error?: string;
-} & Record<string, unknown>;
-
-export type RequestContext = {
-	requestId: string;
-	resolve: (response: Response) => void;
-	reject: (error: Error | string) => void;
-	timeout: number;
-	sentAt: Date;
-	payload: Request;
-};

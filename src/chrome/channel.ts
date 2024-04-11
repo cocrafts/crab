@@ -1,5 +1,5 @@
-import type { RawRequest } from 'core/channel';
 import { AsyncChannel } from 'core/channel';
+import type { RawRequest } from 'core/types';
 
 export class ChromeChannel extends AsyncChannel {
 	connection: chrome.runtime.Port;

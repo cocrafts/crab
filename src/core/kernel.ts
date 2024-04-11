@@ -1,3 +1,4 @@
+import type { Middleware, Request, Response } from './types';
 import { deepFreeze } from './utils';
 
 /**
@@ -90,8 +91,8 @@ export class Kernel<
 	 */
 	execute(
 		channelId: ChannelId,
-		payload: RequestPayload<EventType>,
-		respond: (payload: unknown) => void,
+		payload: Request<EventType>,
+		respond: (payload: Response) => void,
 	) {
 		if (!this.channelsMap[channelId]) {
 			throw Error('No channel registering found with id: ' + channelId);
@@ -108,14 +109,14 @@ export class Kernel<
 			);
 
 		const execute = async (
-			payload: RequestPayload<EventType>,
+			payload: Request<EventType>,
 			middlewares: Middleware<EventType>[],
 		) => {
 			const [currentMiddleware, ...restMiddlewares] = middlewares;
 
 			let next;
 			if (restMiddlewares.length > 0) {
-				next = (payload: RequestPayload<EventType>) => {
+				next = (payload: Request<EventType>) => {
 					execute(payload, restMiddlewares);
 				};
 			}
@@ -123,25 +124,13 @@ export class Kernel<
 			try {
 				await currentMiddleware(payload, respond, next);
 			} catch (error) {
-				respond({ error });
+				respond({
+					requestId: payload.requestId,
+					error: error instanceof Error ? error.message : (error as string),
+				});
 			}
 		};
 
 		execute(payload, middlewares);
 	}
 }
-
-export type Middleware<T> = (
-	payload: RequestPayload<T>,
-	respond: (payload: unknown) => void,
-	next?: (payload: RequestPayload<T>) => void,
-) => Promise<void> | void;
-
-export type RequestPayload<T> = {
-	type: T;
-	/**
-	 * timeout is always passed in the request,
-	 * any timeout-aware middleware can use this one to prevent unexpected retrying/looping
-	 */
-	timeout: number;
-};
