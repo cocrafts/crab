@@ -1,5 +1,5 @@
 {
-  "extends": "@metacraft/tsconfig/base.json",
+  "extends": "@metacraft/tsconfig/application.json",
   "compilerOptions": {
     "baseUrl": "src",
     "paths": {
