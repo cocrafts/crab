@@ -43,15 +43,11 @@ export class AsyncChannel implements Channel {
 
 	handleIncoming(response: Response) {
 		if (typeof response !== 'object' || !response.requestId) {
-			console.log('[AsyncChannel]: got an invalid response');
-			return;
+			throw Error('got an invalid response');
 		}
 
 		if (!this.requestPool[response.requestId]) {
-			console.log(
-				`[AsyncChannel]: can not find context of ${response.requestId} to resolve`,
-			);
-			return;
+			throw Error(`can not find context of ${response.requestId} to resolve`);
 		}
 
 		const { resolve, reject } = this.requestPool[response.requestId];
