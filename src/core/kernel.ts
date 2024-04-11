@@ -1,72 +1,136 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { deepFreeze } from './utils';
 
+/**
+ * Base implementation of kernel for registering and managing handlers (middlewares) of port-event pairs.
+ * Do not directly use this class.
+ *
+ * For a specific runtime, you need to override the `run` method to bootstrap the kernel.
+ * The `run` method must link incoming channel request to pre-registered handlers via calling `execute`.
+ *
+ * Important: remember to call `super.run()` to prevent overwriting from request handling
+ */
 export class Kernel<
-	PortKey extends string | number = string,
-	EventKey extends string | number = string,
+	ChannelId extends string | number = string,
+	EventType extends string | number = string,
 > {
-	portsMap: Record<PortKey, Port<EventKey>> = {} as never;
+	channelsMap: Record<
+		ChannelId,
+		{
+			eventsMap: Record<
+				EventType,
+				{
+					middlewares: Middleware<EventType>[];
+				}
+			>;
+		}
+	> = {} as never;
 
-	registerPort(key: PortKey, port: Port<EventKey>): this {
-		if (!this.portsMap[key]) {
-			this.portsMap[key] = port;
+	/**
+	 * Directly register a channel
+	 */
+	channel(channelId: ChannelId) {
+		if (!this.channelsMap[channelId]) {
+			this.channelsMap[channelId] = { eventsMap: {} as never };
 		}
 
-		return this.port(key);
-	}
-
-	port(key: PortKey) {
-		if (!this.portsMap[key]) {
-			throw Error(`port with key ${key} is not registered`);
-		}
-
-		this.handle = this.registerEvent.bind(this, key);
+		this.handle = this.registerEvent.bind(this, channelId);
 
 		return this;
 	}
 
-	registerEvent(portKey: PortKey, eventKey: EventKey): this {
-		if (!this.portsMap[portKey].eventsMap) {
-			this.portsMap[portKey].eventsMap = {
-				[eventKey]: { handlers: [] },
-			} as never;
-
-			this.use = this.registerMiddleware.bind(this, portKey, eventKey);
+	/**
+	 * Directly add supporting an event for a channel
+	 */
+	registerEvent(channelId: ChannelId, eventType: EventType): this {
+		if (!this.channelsMap[channelId].eventsMap[eventType]) {
+			this.channelsMap[channelId].eventsMap[eventType] = { middlewares: [] };
+			this.use = this.registerMiddleware.bind(this, channelId, eventType);
 		}
 
 		return this;
 	}
 
-	handle(event: EventKey): this {
+	/**
+	 * Add supporting an event for a channel from pipeline
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	handle(eventType: EventType): this {
 		throw Error('"handle" must be used followed by "port" method');
 	}
 
+	/**
+	 * Directly register a middleware for event-channel pair
+	 */
 	registerMiddleware(
-		portKey: PortKey,
-		eventKey: EventKey,
-		middleware: Middleware,
+		channelId: ChannelId,
+		eventType: EventType,
+		middleware: Middleware<EventType>,
 	): this {
-		if (!this.portsMap[portKey].eventsMap[eventKey]) {
-			this.portsMap[portKey].eventsMap[eventKey] = {
-				handlers: [],
-			};
-		}
-
-		this.portsMap[portKey].eventsMap[eventKey].handlers.push(middleware);
+		this.channelsMap[channelId].eventsMap[eventType].middlewares.push(
+			middleware,
+		);
 
 		return this;
 	}
 
-	use(middleware: Middleware): this {
+	/**
+	 * Register a middleware for event-channel pair from pipline
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	use(middleware: Middleware<EventType>): this {
 		throw Error('"use" must be used followed by "handle" method');
+	}
+
+	run() {
+		/**
+		 * prevent overwriting from request handling
+		 */
+		deepFreeze(this);
+	}
+
+	/**
+	 * Execute a request for a specified channel
+	 */
+	execute(
+		channelId: ChannelId,
+		payload: RequestPayload<EventType>,
+		respond: (payload: unknown) => void,
+	) {
+		const middlewares =
+			this.channelsMap[channelId].eventsMap[payload.type].middlewares;
+		if (!middlewares || middlewares.length === 0)
+			throw Error(
+				`No middleware provided to handle event: ${payload.type} for port: ${channelId}`,
+			);
+
+		const execute = async (
+			payload: RequestPayload<EventType>,
+			middlewares: Middleware<EventType>[],
+		) => {
+			const [currentMiddleware, ...restMiddlewares] = middlewares;
+
+			let next;
+			if (restMiddlewares.length > 0) {
+				next = (payload: RequestPayload<EventType>) => {
+					execute(payload, restMiddlewares);
+				};
+			}
+
+			try {
+				await currentMiddleware(payload, respond, next);
+			} catch (error) {
+				respond({ error });
+			}
+		};
+
+		execute(payload, middlewares);
 	}
 }
 
-type Port<T extends string | number> = {
-	eventsMap: Record<T, EventHandler>;
-};
+export type Middleware<T> = (
+	payload: RequestPayload<T>,
+	respond: (payload: unknown) => void,
+	next?: (payload: RequestPayload<T>) => void,
+) => Promise<void> | void;
 
-export type EventHandler = {
-	handlers: Middleware[];
-};
-
-export type Middleware = () => void;
+export type RequestPayload<T> = { type: T };
