@@ -1,7 +1,7 @@
 import { deepFreeze } from './utils';
 
 /**
- * Base implementation of kernel for registering and managing handlers (middlewares) of port-event pairs.
+ * Base implementation of kernel for registering and managing handlers (middlewares) of channel-event pair.
  * Do not directly use this class.
  *
  * For a specific runtime, you need to override the `run` method to bootstrap the kernel.
@@ -82,9 +82,6 @@ export class Kernel<
 	}
 
 	run() {
-		/**
-		 * prevent overwriting from request handling
-		 */
 		deepFreeze(this);
 	}
 
@@ -96,11 +93,18 @@ export class Kernel<
 		payload: RequestPayload<EventType>,
 		respond: (payload: unknown) => void,
 	) {
+		if (!this.channelsMap[channelId]) {
+			throw Error('No channel registering found with id: ' + channelId);
+		} else if (!this.channelsMap[channelId].eventsMap[payload.type]) {
+			throw Error('No event registered with type: ' + payload.type);
+		}
+
 		const middlewares =
 			this.channelsMap[channelId].eventsMap[payload.type].middlewares;
 		if (!middlewares || middlewares.length === 0)
 			throw Error(
-				`No middleware provided to handle event: ${payload.type} for port: ${channelId}`,
+				`No middleware provided to handle
+				 event: ${payload.type} for port: ${channelId}`,
 			);
 
 		const execute = async (
@@ -133,4 +137,11 @@ export type Middleware<T> = (
 	next?: (payload: RequestPayload<T>) => void,
 ) => Promise<void> | void;
 
-export type RequestPayload<T> = { type: T };
+export type RequestPayload<T> = {
+	type: T;
+	/**
+	 * timeout is always passed in the request,
+	 * any timeout-aware middleware can use this one to prevent unexpected retrying/looping
+	 */
+	timeout: number;
+};
