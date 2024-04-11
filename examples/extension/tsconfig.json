@@ -1,5 +1,5 @@
 {
-  "extends": "@metacraft/tsconfig/base.json",
+  "extends": "@metacraft/tsconfig/application.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "baseUrl": "src"

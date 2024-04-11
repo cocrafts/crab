@@ -25,7 +25,7 @@
   },
   "content_scripts": [
     {
-      "js": ["contentScript.js"],
+      "js": ["content.js"],
       "matches": ["file://*/*", "http://*/*", "https://*/*"],
       "all_frames": true
     }

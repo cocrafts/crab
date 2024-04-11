@@ -5,8 +5,8 @@ const createEntries = (config) => {
 	};
 
 	config.entry.contentScript = {
-		import: 'contentScript.tsx',
-		filename: 'contentScript.js',
+		import: 'content/index.tsx',
+		filename: 'content.js',
 	};
 
 	config.entry.injection = {
