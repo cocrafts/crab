@@ -1,5 +1,6 @@
-export type Middleware<T> = (
-	payload: Request<T>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Middleware<T, R = any> = (
+	payload: Request<T> & R,
 	respond: (payload: Response) => void,
 	next?: (payload: Request<T>) => void,
 ) => Promise<void> | void;
