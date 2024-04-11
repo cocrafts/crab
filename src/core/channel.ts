@@ -39,7 +39,7 @@ export class AsyncChannel implements Channel {
 		throw Error('Not implemented yet');
 	}
 
-	async listener(response: Response) {
+	handleIncoming(response: Response) {
 		if (typeof response !== 'object' || !response.requestId) {
 			console.log('[AsyncChannel]: got an invalid response');
 			return;
@@ -84,18 +84,18 @@ export class AsyncChannel implements Channel {
 	}
 }
 
-type RawRequest = Partial<Request>;
+export type RawRequest = Partial<Request>;
 
-type Request = {
+export type Request = {
 	requestId: string;
-};
+} & Record<string, unknown>;
 
-type Response = {
+export type Response = {
 	requestId: string;
 	error?: string;
 } & Record<string, unknown>;
 
-type RequestContext = {
+export type RequestContext = {
 	requestId: string;
 	resolve: (response: Response) => void;
 	reject: (error: Error | string) => void;

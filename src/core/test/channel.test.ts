@@ -47,7 +47,7 @@ test('AsyncChannel with error response from trigger listener', async () => {
 	const promise = channel.request(requestPayload);
 
 	const { payload } = Object.values(channel.requestPool)[0];
-	channel.listener({
+	channel.handleIncoming({
 		requestId: payload.requestId,
 		error: 'failed',
 	});
@@ -63,11 +63,11 @@ test('AsyncChannel with correct response from trigger listener', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = {};
+	const requestPayload = { message: 'hello world' };
 	const promise = channel.request<{ data: string }>(requestPayload);
 
 	const { payload } = Object.values(channel.requestPool)[0];
-	channel.listener({
+	channel.handleIncoming({
 		requestId: payload.requestId,
 		data: 'hello world',
 	});
