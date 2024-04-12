@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Button } from 'components';
 
 export const ContentAppWithRawRuntime = () => {
 	const handleSendEvent = async () => {
@@ -22,7 +23,7 @@ export const ContentAppWithRawRuntime = () => {
 
 	return (
 		<div>
-			<button onClick={handleSendEvent}>Broadcast greeting</button>;
+			<Button title="Broadcast greeting" onClick={handleSendEvent} />
 		</div>
 	);
 };

@@ -16,7 +16,7 @@ const App = () => {
 			<h4 style={{ margin: 0 }}>App with raw chrome runtime</h4>
 			<AppWithRawRuntime />
 
-			<h4 style={{ margin: 0 }}>App with Crab messaging</h4>
+			<h4 style={{ margin: 0, marginTop: 10 }}>App with Crab messaging</h4>
 			<AppWithCrab />
 		</div>
 	);
@@ -24,6 +24,7 @@ const App = () => {
 
 document.body.style.width = '500px';
 document.body.style.height = '600px';
+document.body.style.margin = '0px';
 const container = document.getElementById('root');
 if (container) {
 	const root = createRoot(container);

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Button } from 'components';
 
 export const AppWithRawRuntime = () => {
 	const broadcastGreetingToTopFrameExtension = async () => {
@@ -28,15 +29,17 @@ export const AppWithRawRuntime = () => {
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
-				alignItems: 'center',
+				gap: 6,
 			}}
 		>
-			<button onClick={broadcastGreetingToTopFrameExtension}>
-				Broadcast greeting to Top Frame
-			</button>
-			<button onClick={broadcastGreetingToTabs}>
-				Broadcast greeting to Content Script
-			</button>
+			<Button
+				title="Broadcast greeting to Top Frame"
+				onClick={broadcastGreetingToTopFrameExtension}
+			/>
+			<Button
+				title="Broadcast greeting to Content Script"
+				onClick={broadcastGreetingToTabs}
+			/>
 		</div>
 	);
 };
