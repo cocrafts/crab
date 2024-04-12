@@ -1,10 +1,11 @@
 import { createRoot } from 'react-dom/client';
+import { Box, Title } from 'components';
 
 import { ContentAppWithRawRuntime } from './Raw';
 
 const ContentApp = () => {
 	return (
-		<div
+		<Box
 			style={{
 				width: 400,
 				height: 400,
@@ -20,10 +21,12 @@ const ContentApp = () => {
 				paddingRight: 20,
 			}}
 		>
-			<h3 style={{ margin: 0 }}>Crab - content script</h3>
-			<h4>Content App with raw chrome runtime</h4>
+			<Title style={{ fontSize: 18 }}>Crab - content script</Title>
+			<Title style={{ marginBottom: 10 }}>
+				Content App with raw chrome runtime
+			</Title>
 			<ContentAppWithRawRuntime />
-		</div>
+		</Box>
 	);
 };
 
