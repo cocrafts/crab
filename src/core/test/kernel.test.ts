@@ -214,3 +214,150 @@ test('kernel with failed payload with wrong event type', () => {
 		kernel.execute(ChannelId.App, requestPayload, () => {});
 	}).toThrow();
 });
+
+test('kernel with first middlewares', () => {
+	const kernel = new Kernel<ChannelId, EventType>();
+	const decryptRequest = jest.fn();
+	const handleGreetingFromApp = jest.fn();
+	const handleLoggingFromApp = jest.fn();
+	const handleGreetingFromSDK = jest.fn();
+	kernel
+		.use(decryptRequest)
+
+		.channel(ChannelId.App)
+		.handle(EventType.Greeting)
+		.use(handleGreetingFromApp)
+		.handle(EventType.Logging)
+		.use(handleLoggingFromApp)
+
+		.channel(ChannelId.SDK)
+		.handle(EventType.Greeting)
+		.use(handleGreetingFromSDK);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting].middlewares
+			.length,
+	).toBe(2);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[0],
+	).toBe(decryptRequest);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[1],
+	).toBe(handleGreetingFromApp);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging].middlewares
+			.length,
+	).toBe(2);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
+			.middlewares[0],
+	).toBe(decryptRequest);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
+			.middlewares[1],
+	).toBe(handleLoggingFromApp);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting].middlewares
+			.length,
+	).toBe(2);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[0],
+	).toBe(decryptRequest);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[1],
+	).toBe(handleGreetingFromSDK);
+
+	expect(kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Logging]).toBe(
+		undefined,
+	);
+
+	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+});
+
+test('kernel with last middlewares', () => {
+	const kernel = new Kernel<ChannelId, EventType>();
+	const decryptRequest = jest.fn();
+	const encryptResponse = jest.fn();
+	const notify = jest.fn();
+	const handleGreetingFromApp = jest.fn();
+	const handleGreetingFromSDK = jest.fn();
+	kernel
+		.use(decryptRequest)
+		.channel(ChannelId.App)
+		.handle(EventType.Greeting)
+		.use(handleGreetingFromApp)
+		.channel(ChannelId.SDK)
+		.handle(EventType.Greeting)
+		.use(handleGreetingFromSDK)
+		.unwrap()
+		.use(encryptResponse)
+		.use(notify);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting].middlewares
+			.length,
+	).toBe(4);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[0],
+	).toBe(decryptRequest);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[1],
+	).toBe(handleGreetingFromApp);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[2],
+	).toBe(encryptResponse);
+
+	expect(
+		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
+			.middlewares[3],
+	).toBe(notify);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting].middlewares
+			.length,
+	).toBe(4);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[0],
+	).toBe(decryptRequest);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[1],
+	).toBe(handleGreetingFromSDK);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[2],
+	).toBe(encryptResponse);
+
+	expect(
+		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
+			.middlewares[3],
+	).toBe(notify);
+
+	expect(kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Logging]).toBe(
+		undefined,
+	);
+
+	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+});

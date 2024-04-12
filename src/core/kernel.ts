@@ -14,39 +14,21 @@ export class Kernel<
 	ChannelId extends string | number = string,
 	EventType extends string | number = string,
 > {
-	channelsMap: Record<
-		ChannelId,
-		{
-			eventsMap: Record<
-				EventType,
-				{
-					middlewares: Middleware<EventType>[];
-				}
-			>;
-		}
-	> = {} as never;
+	channelsMap: Record<ChannelId, ChannelContext<EventType>> = {} as never;
+	firstMiddlewares: Middleware<EventType>[] = [];
 
 	/**
 	 * Directly register a channel
 	 */
 	channel(channelId: ChannelId) {
 		if (!this.channelsMap[channelId]) {
-			this.channelsMap[channelId] = { eventsMap: {} as never };
+			this.channelsMap[channelId] = {
+				eventsMap: {} as never,
+				firstMiddlewares: [],
+			};
 		}
 
 		this.handle = this.registerEvent.bind(this, channelId);
-
-		return this;
-	}
-
-	/**
-	 * Directly add supporting an event for a channel
-	 */
-	registerEvent(channelId: ChannelId, eventType: EventType): this {
-		if (!this.channelsMap[channelId].eventsMap[eventType]) {
-			this.channelsMap[channelId].eventsMap[eventType] = { middlewares: [] };
-			this.use = this.registerMiddleware.bind(this, channelId, eventType);
-		}
 
 		return this;
 	}
@@ -56,7 +38,52 @@ export class Kernel<
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	handle(eventType: EventType): this {
-		throw Error('"handle" must be used followed by "port" method');
+		throw Error('"handle" must be used followed by "channel" method');
+	}
+
+	/**
+	 * Register a middleware for event-channel pair from pipline, overided by pipeline
+	 * Or register first middlewares of last middlewares if it's not in a pipeline or unwrapped
+	 */
+	use(middleware: Middleware<EventType>): this {
+		return this.registerFirstOrLastMiddleware(middleware);
+	}
+
+	/**
+	 * Remove current pipeline for freshing things
+	 */
+	unwrap(): this {
+		this.use = this.registerFirstOrLastMiddleware;
+		this.handle = () => {
+			throw Error('"handle" is unwrapped, call a channel first');
+		};
+
+		return this;
+	}
+
+	/**
+	 * This method need to be implemented by specific runtime.
+	 * It's used to bootstrap the kernel
+	 */
+	run() {
+		deepFreeze(this);
+	}
+
+	/**
+	 * Directly add supporting an event for a channel
+	 */
+	registerEvent(channelId: ChannelId, eventType: EventType): this {
+		const isNotInitializedChannelEventPair =
+			this.channelsMap[channelId].eventsMap[eventType];
+		if (!isNotInitializedChannelEventPair) {
+			this.channelsMap[channelId].eventsMap[eventType] = {
+				middlewares: [...this.firstMiddlewares],
+			};
+
+			this.use = this.registerMiddleware.bind(this, channelId, eventType);
+		}
+
+		return this;
 	}
 
 	/**
@@ -75,15 +102,36 @@ export class Kernel<
 	}
 
 	/**
-	 * Register a middleware for event-channel pair from pipline
+	 * Register first or last middleware, only used if it's not in a pipeline or unwrapped.
+	 *
+	 * Register first middleware happens only if the channels map is not initialized or the event handler map is not initialized.
+	 * For existed channel-event pair, append to the middlewares
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	use(middleware: Middleware<EventType>): this {
-		throw Error('"use" must be used followed by "handle" method');
-	}
+	private registerFirstOrLastMiddleware(
+		middleware: Middleware<EventType>,
+	): this {
+		const channels = Object.values<ChannelContext<EventType>>(this.channelsMap);
+		const isNotInitialized = channels.length === 0;
+		if (isNotInitialized) {
+			this.firstMiddlewares.push(middleware);
+		} else {
+			channels.forEach((channel) => {
+				const eventHandlers = Object.values<EventHandlersContext<EventType>>(
+					channel.eventsMap,
+				);
 
-	run() {
-		deepFreeze(this);
+				const isNotInitializedChannelEventPair = eventHandlers.length === 0;
+				if (isNotInitializedChannelEventPair) {
+					channel.firstMiddlewares.push(middleware);
+				} else {
+					eventHandlers.forEach((eventHandler) => {
+						eventHandler.middlewares.push(middleware);
+					});
+				}
+			});
+		}
+
+		return this;
 	}
 
 	/**
@@ -134,3 +182,12 @@ export class Kernel<
 		execute(payload, middlewares);
 	}
 }
+
+export type ChannelContext<EventType extends string | number> = {
+	eventsMap: Record<EventType, EventHandlersContext<EventType>>;
+	firstMiddlewares: Middleware<EventType>[];
+};
+
+export type EventHandlersContext<EventType extends string | number> = {
+	middlewares: Middleware<EventType>[];
+};
