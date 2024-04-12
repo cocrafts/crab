@@ -4,7 +4,7 @@ const createEntries = (config) => {
 		filename: 'background.js',
 	};
 
-	config.entry.contentScript = {
+	config.entry.content = {
 		import: 'content/index.tsx',
 		filename: 'content.js',
 	};

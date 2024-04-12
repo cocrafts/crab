@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "BUILD_TARGET=extension && metacraft bundle && cp manifest.json metacraft"
+    "build": "rm -rf metacraft && BUILD_TARGET=extension && metacraft bundle && cp manifest.json metacraft"
   },
   "author": "",
   "license": "MIT",
