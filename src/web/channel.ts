@@ -1,5 +1,5 @@
-import { AsyncChannel } from 'core/channel';
-import type { RawRequest } from 'core/types';
+import { AsyncChannel } from '../core/channel';
+import type { RawRequest } from '../core/types';
 
 export class WebChannel extends AsyncChannel {
 	channelId: string;

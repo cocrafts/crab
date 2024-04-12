@@ -1,4 +1,4 @@
-import { Kernel } from 'core/kernel';
+import { Kernel } from '../core/kernel';
 
 /**
  * Kernel implementation for web runtime with global `window`.

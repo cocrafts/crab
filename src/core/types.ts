@@ -17,10 +17,10 @@ export type Request<T = string> = {
 	timeout: number;
 } & Record<string, unknown>;
 
-export type Response = {
+export type Response<T = Record<string, unknown>> = {
 	requestId: string;
 	error?: string;
-} & Record<string, unknown>;
+} & T;
 
 export type RequestContext = {
 	requestId: string;
