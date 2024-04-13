@@ -396,7 +396,7 @@ test('kernel with cross-resolving middlewares', async () => {
 					type: EventType.ApproveGreeting,
 					timeout: 1000,
 					resolveId: resolveId,
-					resolvePayload: { approved: true },
+					approved: true,
 				},
 				(resonse) => {
 					expect(resonse.error).toBeUndefined();
@@ -466,7 +466,7 @@ test('kernel with cross-resolving middlewares - resolving timeout', async () => 
 					type: EventType.ApproveGreeting,
 					timeout: 1000,
 					resolveId: resolveId,
-					resolvePayload: { approved: true },
+					approved: true,
 				},
 				(resonse) => {
 					expect(resonse.error).toBeTruthy();
@@ -538,7 +538,7 @@ test('kernel with cross-resolving middlewares - request timeout by late cross-re
 					type: EventType.ApproveGreeting,
 					timeout: 1000,
 					resolveId: resolveId,
-					resolvePayload: { approved: true },
+					approved: true,
 				},
 				(response) => {
 					expect(response.error).toBeTruthy();
