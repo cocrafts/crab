@@ -1,5 +1,4 @@
 import { Kernel } from '../kernel';
-import { handleCrossResolving } from '../middlewares';
 import type { Middleware } from '../types';
 
 enum ChannelId {
@@ -348,7 +347,7 @@ test('kernel with cross-resolving middlewares', async () => {
 
 		.channel(ChannelId.App)
 		.handle(EventType.ApproveGreeting)
-		.use(handleCrossResolving(kernel));
+		.use(kernel.handleCrossResolvingMiddleware);
 
 	await kernel.execute(
 		ChannelId.SDK,
@@ -418,7 +417,7 @@ test('kernel with cross-resolving middlewares - resolving timeout', async () => 
 
 		.channel(ChannelId.App)
 		.handle(EventType.ApproveGreeting)
-		.use(handleCrossResolving(kernel));
+		.use(kernel.handleCrossResolvingMiddleware);
 
 	await kernel.execute(
 		ChannelId.SDK,
@@ -490,7 +489,7 @@ test('kernel with cross-resolving middlewares - request timeout by late cross-re
 
 		.channel(ChannelId.App)
 		.handle(EventType.ApproveGreeting)
-		.use(handleCrossResolving(kernel));
+		.use(kernel.handleCrossResolvingMiddleware);
 
 	// respond after rejected by timeout will cause error
 	await kernel.execute(

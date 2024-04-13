@@ -310,6 +310,23 @@ export class Kernel<
 	private stopCleaner() {
 		clearInterval(this.timer as never);
 	}
+
+	handleCrossResolvingMiddleware: Middleware = (request, respond) => {
+		const { resolveId } = request;
+		if (!resolveId) {
+			respond({ error: 'Can not find resolveId in request' });
+			return;
+		}
+
+		const resolvingContext = this.crossResolvingContext[resolveId];
+		if (!resolvingContext) {
+			respond({ error: 'Can not find context for cross-resolving' });
+		} else {
+			const { resolve } = resolvingContext;
+			resolve(request);
+			respond({ message: 'ok' });
+		}
+	};
 }
 
 export type ChannelContext<EventType extends string | number> = {

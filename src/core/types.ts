@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Middleware<EventType, RequestPayload = any> = (
+export type Middleware<EventType = any, RequestPayload = any> = (
 	request: Request<EventType, RequestPayload>,
 	respond: (response: RawResponse) => void,
 	next?: (request: Request<EventType, RequestPayload>) => void,
