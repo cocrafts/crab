@@ -1,7 +1,6 @@
-import type { Optional } from '../utils';
 import { deepFreeze } from '../utils';
 
-import type { Middleware, Request, Response } from './types';
+import type { Middleware, RawResponse, Request } from './types';
 
 /**
  * Base implementation of kernel for registering and managing handlers (middlewares) of channel-event pair.
@@ -141,29 +140,32 @@ export class Kernel<
 	 */
 	execute(
 		channelId: ChannelId,
-		payload: Request<EventType>,
-		respond: (payload: Optional<Response, 'requestId'>) => void,
+		request: Request<EventType>,
+		respond: (payload: RawResponse) => void,
 	) {
 		if (!this.channelsMap[channelId]) {
 			throw Error('No channel registering found with id: ' + channelId);
-		} else if (!this.channelsMap[channelId].eventsMap[payload.type]) {
-			throw Error('No event registered with type: ' + payload.type);
+		} else if (!this.channelsMap[channelId].eventsMap[request.type]) {
+			throw Error('No event registered with type: ' + request.type);
 		}
 
-		const respondWithRequestId = (payload: Optional<Response, 'requestId'>) => {
-			respond(Object.assign(payload, { requestId: payload.requestId }));
+		const respondWithRequestId = (response: RawResponse) => {
+			const responseWithRequestId = Object.assign(response, {
+				requestId: request.id,
+			});
+			respond(responseWithRequestId);
 		};
 
 		const middlewares =
-			this.channelsMap[channelId].eventsMap[payload.type].middlewares;
+			this.channelsMap[channelId].eventsMap[request.type].middlewares;
 		if (!middlewares || middlewares.length === 0)
 			throw Error(
 				`No middleware provided to handle
-				 event: ${payload.type} for port: ${channelId}`,
+				 event: ${request.type} for port: ${channelId}`,
 			);
 
 		const execute = async (
-			payload: Request<EventType>,
+			request: Request<EventType>,
 			middlewares: Middleware<EventType>[],
 		) => {
 			const [currentMiddleware, ...restMiddlewares] = middlewares;
@@ -176,7 +178,7 @@ export class Kernel<
 			}
 
 			try {
-				await currentMiddleware(payload, respondWithRequestId, next);
+				await currentMiddleware(request, respondWithRequestId, next);
 			} catch (error) {
 				respondWithRequestId({
 					error: error instanceof Error ? error.message : (error as string),
@@ -184,7 +186,7 @@ export class Kernel<
 			}
 		};
 
-		execute(payload, middlewares);
+		execute(request, middlewares);
 	}
 }
 

@@ -1,30 +1,34 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Middleware<T, R = any> = (
-	payload: Request<T> & R,
-	respond: (payload: Response) => void,
-	next?: (payload: Request<T>) => void,
+export type Middleware<RequestType, RequestPayload = any> = (
+	request: Request<RequestType, RequestPayload>,
+	respond: (response: RawResponse) => void,
+	next?: (request: Request<RequestType, RequestPayload>) => void,
 ) => Promise<void> | void;
 
-export type RawRequest = Partial<Request>;
+export type RawRequest<Type = string, Payload = Record<string, unknown>> = {
+	type: Type;
+} & Payload;
 
-export type Request<T = string> = {
-	requestId: string;
-	type: T;
+export type Request<Type = string, Payload = Record<string, unknown>> = {
+	id: string;
 	/**
 	 * timeout is always passed in the request,
 	 * any timeout-aware middleware can use this one to prevent unexpected retrying/looping
 	 */
 	timeout: number;
-} & Record<string, unknown>;
+} & RawRequest<Type, Payload>;
 
-export type Response<T = Record<string, unknown>> = {
-	requestId: string;
+export type RawResponse<Payload = Record<string, unknown>> = {
 	error?: string;
-} & T;
+} & Payload;
+
+export type Response<Payload = Record<string, unknown>> = {
+	requestId: string;
+} & RawResponse<Payload>;
 
 export type RequestContext = {
 	requestId: string;
-	resolve: (response: Response) => void;
+	resolve: (response: RawResponse) => void;
 	reject: (error: Error | string) => void;
 	timeout: number;
 	sentAt: Date;

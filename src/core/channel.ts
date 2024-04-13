@@ -12,22 +12,25 @@ export class AsyncChannel implements Channel {
 		this.startCleaner();
 	}
 
-	async request<T>(payload: RawRequest, timeout: number = 1000): Promise<T> {
-		if (typeof payload !== 'object') {
+	async request<T>(
+		request: RawRequest | (RawRequest & { id: string }),
+		timeout: number = 1000,
+	): Promise<T> {
+		if (typeof request !== 'object') {
 			throw Error("Payload must be 'object' type");
-		} else if (payload.requestId && this.requestPool[payload.requestId]) {
+		} else if (request.id && this.requestPool[(request as Request).id]) {
 			throw Error('Request id must be unique');
-		} else if (!payload.requestId) {
-			payload.requestId = crypto.randomUUID();
+		} else if (!request.id) {
+			request.id = crypto.randomUUID();
 		}
 
 		// passing timeout to kernel for timeout-aware communication
-		this.push(Object.assign(payload, { timeout }));
+		this.push(Object.assign(request, { timeout }));
 
 		return new Promise((resolve, reject) => {
-			this.requestPool[payload.requestId as string] = {
-				requestId: payload.requestId as string,
-				payload: payload as Request,
+			this.requestPool[request.id as string] = {
+				requestId: request.id as string,
+				payload: request as Request,
 				resolve: resolve as RequestContext['resolve'],
 				reject,
 				timeout,

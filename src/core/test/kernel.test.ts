@@ -80,8 +80,8 @@ test('kernel with middlewares', () => {
 
 test('kernel with execute payload', () => {
 	const kernel = new Kernel<ChannelId, EventType>();
-	const handleRequestPayload: Middleware<EventType> = (payload, respond) => {
-		respond({ requestId: payload.requestId, message: 'hello' });
+	const handleRequestPayload: Middleware<EventType> = (_, respond) => {
+		respond({ message: 'hello' });
 	};
 
 	kernel
@@ -89,26 +89,26 @@ test('kernel with execute payload', () => {
 		.handle(EventType.Greeting)
 		.use(handleRequestPayload);
 
-	const requestPayload = {
-		requestId: crypto.randomUUID(),
+	const request = {
+		id: crypto.randomUUID(),
 		type: EventType.Greeting,
 		timeout: 1000,
 	};
 
-	kernel.execute(ChannelId.App, requestPayload, (payload) => {
+	kernel.execute(ChannelId.App, request, (payload) => {
 		expect(payload.message).toEqual('hello');
 	});
 });
 
 test('kernel with execute payload with next in middleware', () => {
 	const kernel = new Kernel<ChannelId, EventType>();
-	const checkPayload: Middleware<EventType> = (payload, _respond, next) => {
-		next?.({ ...payload, checked: true });
+	const checkPayload: Middleware<EventType> = (request, _respond, next) => {
+		next?.({ ...request, checked: true });
 	};
 
-	const handleRequestPayload: Middleware<EventType> = (payload, respond) => {
-		expect(payload.checked).toBeTruthy();
-		respond({ requestId: payload.requestId, message: 'hello' });
+	const handleRequestPayload: Middleware<EventType> = (request, respond) => {
+		expect(request.checked).toBeTruthy();
+		respond({ message: 'hello' });
 	};
 
 	kernel
@@ -117,15 +117,15 @@ test('kernel with execute payload with next in middleware', () => {
 		.use(checkPayload)
 		.use(handleRequestPayload);
 
-	const requestPayload = {
-		requestId: crypto.randomUUID(),
+	const request = {
+		id: crypto.randomUUID(),
 		type: EventType.Greeting,
 		timeout: 1000,
 	};
 
-	kernel.execute(ChannelId.App, requestPayload, (payload) => {
-		expect(payload.message).toEqual('hello');
-		expect(payload.requestId).toEqual(requestPayload.requestId);
+	kernel.execute(ChannelId.App, request, (response) => {
+		expect(response.message).toEqual('hello');
+		expect(response.requestId).toEqual(request.id);
 	});
 });
 
@@ -135,9 +135,9 @@ test('kernel with execute payload with error in middleware', () => {
 		throw Error('Something went wrong');
 	};
 
-	const handleRequestPayload: Middleware<EventType> = (payload, respond) => {
-		expect(payload.checked).toBeTruthy();
-		respond({ requestId: payload.requestId, message: 'hello' });
+	const handleRequestPayload: Middleware<EventType> = (request, respond) => {
+		expect(request.checked).toBeTruthy();
+		respond({ message: 'hello' });
 	};
 
 	kernel
@@ -146,14 +146,14 @@ test('kernel with execute payload with error in middleware', () => {
 		.use(checkPayload)
 		.use(handleRequestPayload);
 
-	const requestPayload = {
-		requestId: crypto.randomUUID(),
+	const request = {
+		id: crypto.randomUUID(),
 		type: EventType.Greeting,
 		timeout: 1000,
 	};
 
-	kernel.execute(ChannelId.App, requestPayload, (payload) => {
-		expect(payload.error).toEqual('Something went wrong');
+	kernel.execute(ChannelId.App, request, (response) => {
+		expect(response.error).toEqual('Something went wrong');
 	});
 });
 
@@ -161,9 +161,9 @@ test('kernel with execute payload with no response', () => {
 	const kernel = new Kernel<ChannelId, EventType>();
 	const checkPayload: Middleware<EventType> = async () => {};
 
-	const handleRequestPayload: Middleware<EventType> = (payload, respond) => {
-		expect(payload.checked).toBeTruthy();
-		respond({ requestId: payload.requestId, message: 'hello' });
+	const handleRequestPayload: Middleware<EventType> = (request, respond) => {
+		expect(request.checked).toBeTruthy();
+		respond({ message: 'hello' });
 	};
 
 	kernel
@@ -172,14 +172,14 @@ test('kernel with execute payload with no response', () => {
 		.use(checkPayload)
 		.use(handleRequestPayload);
 
-	const requestPayload = {
-		requestId: crypto.randomUUID(),
+	const request = {
+		id: crypto.randomUUID(),
 		type: EventType.Greeting,
 		timeout: 1000,
 	};
 
 	let count = 0;
-	kernel.execute(ChannelId.App, requestPayload, () => {
+	kernel.execute(ChannelId.App, request, () => {
 		count++;
 	});
 
@@ -195,7 +195,7 @@ test('kernel with failed payload with wrong event type', () => {
 		respond,
 	) => {
 		expect(payload.checked).toBeTruthy();
-		respond({ requestId: payload.requestId, message: 'hello' });
+		respond({ message: 'hello' });
 	};
 
 	kernel
@@ -204,14 +204,14 @@ test('kernel with failed payload with wrong event type', () => {
 		.use(checkPayload)
 		.use(handleRequestPayload);
 
-	const requestPayload = {
-		requestId: crypto.randomUUID(),
+	const request = {
+		id: crypto.randomUUID(),
 		type: 'WrongEventType' as never,
 		timeout: 1000,
 	};
 
 	expect(() => {
-		kernel.execute(ChannelId.App, requestPayload, () => {});
+		kernel.execute(ChannelId.App, request, () => {});
 	}).toThrow();
 });
 

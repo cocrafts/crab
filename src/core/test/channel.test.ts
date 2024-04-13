@@ -4,11 +4,11 @@ test('AsyncChannel with request id', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = {};
-	const promise = channel.request(requestPayload);
+	const request = { type: 'ping' };
+	const promise = channel.request(request);
 
 	expect(Object.values(channel.requestPool).length).toBe(1);
-	expect(Object.values(channel.requestPool)[0].payload).toBe(requestPayload);
+	expect(Object.values(channel.requestPool)[0].payload).toBe(request);
 	expect(Object.values(channel.requestPool)[0].requestId).toBeTruthy();
 
 	const requestContext = Object.values(channel.requestPool)[0];
@@ -25,8 +25,8 @@ test('AsyncChannel with error response', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = {};
-	const promise = channel.request(requestPayload);
+	const request = { type: 'ping' };
+	const promise = channel.request(request);
 
 	const requestContext = Object.values(channel.requestPool)[0];
 	const { reject } = requestContext;
@@ -43,12 +43,12 @@ test('AsyncChannel with error response from trigger listener', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = {};
-	const promise = channel.request(requestPayload);
+	const request = { type: 'ping' };
+	const promise = channel.request(request);
 
-	const { payload } = Object.values(channel.requestPool)[0];
+	const { requestId } = Object.values(channel.requestPool)[0];
 	channel.handleIncoming({
-		requestId: payload.requestId,
+		requestId: requestId,
 		error: 'failed',
 	});
 
@@ -63,12 +63,12 @@ test('AsyncChannel with correct response from trigger listener', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = { message: 'hello world' };
-	const promise = channel.request<{ data: string }>(requestPayload);
+	const request = { type: 'ping', message: 'hello world' };
+	const promise = channel.request<{ data: string }>(request);
 
 	const { payload } = Object.values(channel.requestPool)[0];
 	channel.handleIncoming({
-		requestId: payload.requestId,
+		requestId: payload.id,
 		data: 'hello world',
 	});
 
@@ -82,8 +82,8 @@ test('AsyncChannel failed by exceed timeout', async () => {
 	const channel = new AsyncChannel();
 
 	channel.push = jest.fn();
-	const requestPayload = {};
-	const promise = channel.request<{ data: string }>(requestPayload, 0);
+	const request = { type: 'ping' };
+	const promise = channel.request<{ data: string }>(request, 0);
 
 	expect(async () => {
 		await promise;
@@ -99,8 +99,8 @@ test('AsyncChannel request with push event implementation', async () => {
 	channel.push = () => {
 		count++;
 	};
-	const requestPayload = {};
-	const promise = channel.request<{ data: string }>(requestPayload, 0);
+	const request = { type: 'ping' };
+	const promise = channel.request<{ data: string }>(request, 0);
 
 	expect(async () => {
 		await promise;
