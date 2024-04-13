@@ -1,5 +1,7 @@
+import type { Optional } from '../utils';
+import { deepFreeze } from '../utils';
+
 import type { Middleware, Request, Response } from './types';
-import { deepFreeze } from './utils';
 
 /**
  * Base implementation of kernel for registering and managing handlers (middlewares) of channel-event pair.
@@ -140,13 +142,17 @@ export class Kernel<
 	execute(
 		channelId: ChannelId,
 		payload: Request<EventType>,
-		respond: (payload: Response) => void,
+		respond: (payload: Optional<Response, 'requestId'>) => void,
 	) {
 		if (!this.channelsMap[channelId]) {
 			throw Error('No channel registering found with id: ' + channelId);
 		} else if (!this.channelsMap[channelId].eventsMap[payload.type]) {
 			throw Error('No event registered with type: ' + payload.type);
 		}
+
+		const respondWithRequestId = (payload: Optional<Response, 'requestId'>) => {
+			respond(Object.assign(payload, { requestId: payload.requestId }));
+		};
 
 		const middlewares =
 			this.channelsMap[channelId].eventsMap[payload.type].middlewares;
@@ -170,10 +176,9 @@ export class Kernel<
 			}
 
 			try {
-				await currentMiddleware(payload, respond, next);
+				await currentMiddleware(payload, respondWithRequestId, next);
 			} catch (error) {
-				respond({
-					requestId: payload.requestId,
+				respondWithRequestId({
 					error: error instanceof Error ? error.message : (error as string),
 				});
 			}
