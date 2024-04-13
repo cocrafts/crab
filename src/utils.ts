@@ -1,11 +1,11 @@
-export const deepFreeze = (obj: object) => {
-	Object.keys(obj).forEach((key) => {
-		if (typeof obj[key as never] === 'object') {
-			deepFreeze(obj[key as never]);
-		}
+export const deepFreeze = (hm: unknown) => {
+	if (!hm || typeof hm !== 'object') return;
+
+	Object.keys(hm).forEach((key) => {
+		deepFreeze(hm[key as never]);
 	});
 
-	return Object.freeze(obj);
+	return Object.freeze(hm);
 };
 
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
