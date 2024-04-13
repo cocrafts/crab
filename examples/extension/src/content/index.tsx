@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { Box, Title } from 'components';
 
+import { ContentAppWithCrab } from './Crab';
 import { ContentAppWithRawRuntime } from './Raw';
 
 const ContentApp = () => {
@@ -8,7 +9,8 @@ const ContentApp = () => {
 		<Box
 			style={{
 				width: 400,
-				height: 400,
+				minHeight: 400,
+				maxHeight: 800,
 				position: 'fixed',
 				bottom: 0,
 				right: 0,
@@ -19,6 +21,7 @@ const ContentApp = () => {
 				padding: 10,
 				paddingLeft: 20,
 				paddingRight: 20,
+				overflow: 'scroll',
 			}}
 		>
 			<Title style={{ fontSize: 18 }}>Crab - content script</Title>
@@ -26,6 +29,11 @@ const ContentApp = () => {
 				Content App with raw chrome runtime
 			</Title>
 			<ContentAppWithRawRuntime />
+
+			<Title style={{ marginBottom: 10, marginTop: 20 }}>
+				Content App with Crab
+			</Title>
+			<ContentAppWithCrab />
 		</Box>
 	);
 };

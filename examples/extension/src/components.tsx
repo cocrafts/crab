@@ -34,7 +34,7 @@ export const Button: FC<ButtonProps> = ({ title, style, onClick }) => {
 };
 
 type TextProps = {
-	children: string;
+	children: ReactNode;
 	style?: CSSProperties;
 };
 

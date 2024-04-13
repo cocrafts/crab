@@ -1,9 +1,12 @@
 import { createRoot } from 'react-dom/client';
 
+import { Approval } from './Approval';
 import { AppWithCrab } from './Crab';
 import { AppWithRawRuntime } from './Raw';
 
 const App = () => {
+	const { hash } = new URL(window.location.href);
+
 	return (
 		<div
 			style={{
@@ -13,11 +16,17 @@ const App = () => {
 			}}
 		>
 			<h3 style={{ margin: 0 }}>Crab App</h3>
-			<h4 style={{ margin: 0 }}>App with raw chrome runtime</h4>
-			<AppWithRawRuntime />
+			{hash ? (
+				<Approval />
+			) : (
+				<>
+					<h4 style={{ margin: 0 }}>App with raw chrome runtime</h4>
+					<AppWithRawRuntime />
 
-			<h4 style={{ margin: 0, marginTop: 10 }}>App with Crab messaging</h4>
-			<AppWithCrab />
+					<h4 style={{ margin: 0, marginTop: 10 }}>App with Crab messaging</h4>
+					<AppWithCrab />
+				</>
+			)}
 		</div>
 	);
 };
