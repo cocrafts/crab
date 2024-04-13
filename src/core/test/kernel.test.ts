@@ -1,4 +1,5 @@
 import { Kernel } from '../kernel';
+import { handleCrossResolving } from '../middlewares';
 import type { Middleware } from '../types';
 
 enum ChannelId {
@@ -10,6 +11,7 @@ enum ChannelId {
 enum EventType {
 	Greeting,
 	Logging,
+	ApproveGreeting,
 }
 
 test('kernel with middlewares', () => {
@@ -210,9 +212,9 @@ test('kernel with failed payload with wrong event type', () => {
 		timeout: 1000,
 	};
 
-	expect(() => {
-		kernel.execute(ChannelId.App, request, () => {});
-	}).toThrow();
+	kernel.execute(ChannelId.App, request, (response) => {
+		expect(response.error).toBeTruthy();
+	});
 });
 
 test('kernel with first middlewares', () => {
@@ -360,4 +362,215 @@ test('kernel with last middlewares', () => {
 	);
 
 	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+});
+
+test('kernel with cross-resolving middlewares', async () => {
+	const kernel = new Kernel<ChannelId, EventType>();
+
+	const askForApprovalFromApp: Middleware<EventType> = async (
+		request,
+		respond,
+		next,
+	) => {
+		const { resolveId, resolve } = kernel.createCrossResolvingRequest(
+			request.id,
+		);
+
+		// call resolving from another channel here
+		mockResolvingFromApp(resolveId);
+
+		const { approved } = await resolve<{ approved: boolean }>();
+		if (!approved) {
+			respond({ error: 'greeting rejected' });
+		} else {
+			next?.(request);
+		}
+	};
+
+	const mockResolvingFromApp = (resolveId: string) => {
+		setTimeout(() => {
+			kernel.execute(
+				ChannelId.App,
+				{
+					id: crypto.randomUUID(),
+					type: EventType.ApproveGreeting,
+					timeout: 1000,
+					resolveId: resolveId,
+					resolvePayload: { approved: true },
+				},
+				(resonse) => {
+					expect(resonse.error).toBeUndefined();
+				},
+			);
+		}, 200);
+	};
+
+	const handleGreetingFromSDK: Middleware<EventType> = (_payload, respond) => {
+		respond({ message: 'hello from kernel' });
+	};
+
+	kernel
+		.channel(ChannelId.SDK)
+		.handle(EventType.Greeting)
+		.use(askForApprovalFromApp)
+		.use(handleGreetingFromSDK)
+
+		.channel(ChannelId.App)
+		.handle(EventType.ApproveGreeting)
+		.use(handleCrossResolving(kernel));
+
+	await kernel.execute(
+		ChannelId.SDK,
+		{
+			id: crypto.randomUUID(),
+			type: EventType.Greeting,
+			timeout: 1000,
+		},
+		(response) => {
+			expect(response.message).toEqual('hello from kernel');
+		},
+	);
+});
+
+test('kernel with cross-resolving middlewares - resolving timeout', async () => {
+	const kernel = new Kernel<ChannelId, EventType>();
+
+	const askForApprovalFromApp: Middleware<EventType> = async (
+		request,
+		respond,
+		next,
+	) => {
+		const { resolveId, resolve } = kernel.createCrossResolvingRequest(
+			request.id,
+			100,
+		);
+
+		// call resolving from another channel here
+		mockResolvingFromApp(resolveId);
+
+		const { approved } = await resolve<{ approved: boolean }>();
+		console.log("wait resolving 'from app'");
+		if (!approved) {
+			respond({ error: 'greeting rejected' });
+		} else {
+			next?.(request);
+		}
+	};
+
+	const mockResolvingFromApp = (resolveId: string) => {
+		setTimeout(async () => {
+			await kernel.execute(
+				ChannelId.App,
+				{
+					id: crypto.randomUUID(),
+					type: EventType.ApproveGreeting,
+					timeout: 1000,
+					resolveId: resolveId,
+					resolvePayload: { approved: true },
+				},
+				(resonse) => {
+					expect(resonse.error).toBeTruthy();
+				},
+			);
+		}, 200);
+	};
+
+	const handleGreetingFromSDK: Middleware<EventType> = (_payload, respond) => {
+		respond({ message: 'hello from kernel' });
+	};
+
+	kernel
+		.channel(ChannelId.SDK)
+		.handle(EventType.Greeting)
+		.use(askForApprovalFromApp)
+		.use(handleGreetingFromSDK)
+
+		.channel(ChannelId.App)
+		.handle(EventType.ApproveGreeting)
+		.use(handleCrossResolving(kernel));
+
+	await kernel.execute(
+		ChannelId.SDK,
+		{
+			id: crypto.randomUUID(),
+			type: EventType.Greeting,
+			timeout: 1000,
+		},
+		(response) => {
+			expect(response.error).toBeTruthy();
+		},
+	);
+
+	// to avoid jest timeout
+	await new Promise((resolve) => setTimeout(resolve, 300));
+});
+
+test('kernel with cross-resolving middlewares - request timeout by late cross-resolving', async () => {
+	const kernel = new Kernel<ChannelId, EventType>();
+
+	const askForApprovalFromApp: Middleware<EventType> = async (
+		request,
+		respond,
+		next,
+	) => {
+		const { resolveId, resolve } = kernel.createCrossResolvingRequest(
+			request.id,
+			200,
+		);
+
+		// call resolving from another channel here
+		mockResolvingFromApp(resolveId);
+
+		const { approved } = await resolve<{ approved: boolean }>();
+		if (!approved) {
+			respond({ error: 'greeting rejected' });
+		} else {
+			next?.(request);
+		}
+	};
+
+	const mockResolvingFromApp = (resolveId: string) => {
+		setTimeout(() => {
+			kernel.execute(
+				ChannelId.App,
+				{
+					id: crypto.randomUUID(),
+					type: EventType.ApproveGreeting,
+					timeout: 1000,
+					resolveId: resolveId,
+					resolvePayload: { approved: true },
+				},
+				(response) => {
+					expect(response.error).toBeTruthy();
+				},
+			);
+		}, 100);
+	};
+
+	const handleGreetingFromSDK: Middleware<EventType> = (_payload, respond) => {
+		respond({ message: 'hello from kernel' });
+	};
+
+	kernel
+		.channel(ChannelId.SDK)
+		.handle(EventType.Greeting)
+		.use(askForApprovalFromApp)
+		.use(handleGreetingFromSDK)
+
+		.channel(ChannelId.App)
+		.handle(EventType.ApproveGreeting)
+		.use(handleCrossResolving(kernel));
+
+	// respond after rejected by timeout will cause error
+	await kernel.execute(
+		ChannelId.SDK,
+		{
+			id: crypto.randomUUID(),
+			type: EventType.Greeting,
+			timeout: 1000, // request timeout
+		},
+		(response) => {
+			expect(response.error).toBeTruthy();
+		},
+	);
 });

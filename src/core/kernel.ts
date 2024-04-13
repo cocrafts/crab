@@ -1,6 +1,11 @@
 import { deepFreeze } from '../utils';
 
-import type { Middleware, RawResponse, Request } from './types';
+import type {
+	KernelRequestContext,
+	Middleware,
+	RawResponse,
+	Request,
+} from './types';
 
 /**
  * Base implementation of kernel for registering and managing handlers (middlewares) of channel-event pair.
@@ -15,6 +20,22 @@ export class Kernel<
 	ChannelId extends string | number = string,
 	EventType extends string | number = string,
 > {
+	/**
+	 * This request pool supports cross-resolving requests
+	 * and detects unresolved the final middleware (dangling middleware)
+	 */
+	requestPool: Record<string, KernelRequestContext<EventType>> = {};
+	timer: never | null = null;
+
+	crossResolvingContext: Record<
+		string,
+		{
+			requestId: string;
+			resolve: (value: unknown) => void;
+			reject: (error: Error | string) => void;
+		}
+	> = {};
+
 	channelsMap: Record<ChannelId, ChannelContext<EventType>> = {} as never;
 	firstMiddlewares: Middleware<EventType>[] = [];
 
@@ -66,8 +87,9 @@ export class Kernel<
 	 * This method need to be implemented by specific runtime.
 	 * It's used to bootstrap the kernel
 	 */
-	run() {
+	run(cleanInterval?: number) {
 		deepFreeze(this);
+		this.startCleaner(cleanInterval);
 	}
 
 	/**
@@ -138,31 +160,49 @@ export class Kernel<
 	/**
 	 * Execute a request for a specified channel
 	 */
-	execute(
+	async execute(
 		channelId: ChannelId,
 		request: Request<EventType>,
 		respond: (payload: RawResponse) => void,
 	) {
-		if (!this.channelsMap[channelId]) {
-			throw Error('No channel registering found with id: ' + channelId);
-		} else if (!this.channelsMap[channelId].eventsMap[request.type]) {
-			throw Error('No event registered with type: ' + request.type);
-		}
+		const respondWithResolving = (response: RawResponse) => {
+			if (!this.requestPool[request.id]) {
+				throw Error('This request has already been resolved');
+			} else {
+				delete this.requestPool[request.id];
+			}
 
-		const respondWithRequestId = (response: RawResponse) => {
 			const responseWithRequestId = Object.assign(response, {
 				requestId: request.id,
 			});
 			respond(responseWithRequestId);
 		};
 
+		const defaultTimeout = 1000;
+		this.requestPool[request.id] = {
+			request,
+			receivedAt: new Date(),
+			// do I need to setTimeout to automatically clean it up?
+			timeout: request.timeout || defaultTimeout,
+			respondWithResolving,
+		};
+
+		if (!this.channelsMap[channelId]) {
+			respondWithResolving({ error: `Unsupported channel '${channelId}'` });
+			return;
+		} else if (!this.channelsMap[channelId].eventsMap[request.type]) {
+			respondWithResolving({ error: `Unsupported event '${request.type}'` });
+			return;
+		}
+
 		const middlewares =
 			this.channelsMap[channelId].eventsMap[request.type].middlewares;
-		if (!middlewares || middlewares.length === 0)
-			throw Error(
-				`No middleware provided to handle
-				 event: ${request.type} for port: ${channelId}`,
-			);
+		if (!middlewares || middlewares.length === 0) {
+			respondWithResolving({
+				error: `Unsupported event '${request.type}' from channel '${channelId}'`,
+			});
+			return;
+		}
 
 		const execute = async (
 			request: Request<EventType>,
@@ -178,15 +218,94 @@ export class Kernel<
 			}
 
 			try {
-				await currentMiddleware(request, respondWithRequestId, next);
+				await currentMiddleware(request, respondWithResolving, next);
+
+				const isUnresolvedFinal =
+					restMiddlewares.length === 0 && this.requestPool[request.id];
+
+				/**
+				 * Responsing if the last middleware has done and the request is not resolved,
+				 */
+				if (isUnresolvedFinal) {
+					respondWithResolving({ error: 'Can not resolve this request' });
+				}
 			} catch (error) {
-				respondWithRequestId({
+				if (!this.requestPool[request.id]) {
+					// there is problem in async testing, it throw an unexpected error about timeout
+					return;
+				}
+
+				respondWithResolving({
 					error: error instanceof Error ? error.message : (error as string),
 				});
 			}
 		};
 
-		execute(request, middlewares);
+		await execute(request, middlewares);
+	}
+
+	createCrossResolvingRequest(requestId: string, timeout: number = 1000) {
+		const resolveId = crypto.randomUUID();
+
+		const resolve = async <T>() => {
+			return new Promise((resolve, reject) => {
+				const timerId = setTimeout(() => {
+					reject(new Error(`Resolving ${resolveId} for ${requestId} timeout`));
+					delete this.crossResolvingContext[resolveId];
+				}, timeout);
+
+				this.crossResolvingContext[resolveId] = {
+					requestId,
+					resolve: (value) => {
+						resolve(value);
+						clearTimeout(timerId);
+						delete this.crossResolvingContext[resolveId];
+					},
+					reject: (value) => {
+						reject(value);
+						clearTimeout(timerId);
+						delete this.crossResolvingContext[resolveId];
+					},
+				};
+			}) as T;
+		};
+
+		return { resolveId, resolve };
+	}
+
+	private startCleaner(interval: number = 1000) {
+		if (this.timer) throw Error('Cleaner is already running');
+
+		this.timer = setInterval(() => {
+			const now = new Date();
+			for (const requestId in this.requestPool) {
+				const duration =
+					now.getTime() - this.requestPool[requestId].receivedAt.getTime();
+
+				if (duration > this.requestPool[requestId].timeout) {
+					this.requestPool[requestId].respondWithResolving({
+						error: "Request timeout, can't resolve this request",
+					});
+
+					this.cleanAllCrossResolvingContextOfRequest(requestId);
+				}
+			}
+		}, interval) as never;
+	}
+
+	private cleanAllCrossResolvingContextOfRequest(requestId: string) {
+		Object.entries(this.crossResolvingContext).forEach(([key, value]) => {
+			if (value.requestId === requestId) {
+				delete this.crossResolvingContext[key];
+			}
+		});
+	}
+
+	/**
+	 * ignore for now
+	 */
+	private stopCleaner() {
+		clearInterval(this.timer as never);
 	}
 }
 

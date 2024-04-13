@@ -1,8 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Middleware<RequestType, RequestPayload = any> = (
-	request: Request<RequestType, RequestPayload>,
+export type Middleware<EventType, RequestPayload = any> = (
+	request: Request<EventType, RequestPayload>,
 	respond: (response: RawResponse) => void,
-	next?: (request: Request<RequestType, RequestPayload>) => void,
+	next?: (request: Request<EventType, RequestPayload>) => void,
 ) => Promise<void> | void;
 
 export type RawRequest<Type = string, Payload = Record<string, unknown>> = {
@@ -33,4 +33,11 @@ export type RequestContext = {
 	timeout: number;
 	sentAt: Date;
 	payload: Request;
+};
+
+export type KernelRequestContext<EventType = string> = {
+	timeout: number;
+	request: Request<EventType>;
+	receivedAt: Date;
+	respondWithResolving: (response: RawResponse) => void;
 };
