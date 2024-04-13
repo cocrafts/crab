@@ -19,7 +19,9 @@ export class ChromeKernel<
 		chrome.runtime.onConnect.addListener((port) => {
 			const channelId = port.name as ChannelId;
 			port.onMessage.addListener((message, port) => {
-				this.execute(channelId, message, port.postMessage);
+				this.execute(channelId, message, (payload) => {
+					port.postMessage(payload);
+				});
 			});
 		});
 	}
