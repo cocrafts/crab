@@ -33,51 +33,34 @@ test('kernel with middlewares', () => {
 		.handle(EventType.Greeting)
 		.use(handleGreetingFromSDK);
 
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(2);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[1],
-	).toBe(handleGreetingFromApp);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging].middlewares
-			.length,
-	).toBe(2);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
-			.middlewares[1],
-	).toBe(handleLoggingFromApp);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(1);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(handleGreetingFromSDK);
-
-	expect(kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Logging]).toBe(
-		undefined,
+	const appGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.App,
+		EventType.Greeting,
 	);
+	expect(appGreetingMiddlewares.length).toBe(2);
+	expect(appGreetingMiddlewares[0]).toBe(decryptRequest);
+	expect(appGreetingMiddlewares[1]).toBe(handleGreetingFromApp);
 
-	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+	const appLoggingMiddlewares = kernel.getMiddlewares(
+		ChannelId.App,
+		EventType.Logging,
+	);
+	expect(appLoggingMiddlewares.length).toBe(2);
+	expect(appLoggingMiddlewares[0]).toBe(decryptRequest);
+	expect(appLoggingMiddlewares[1]).toBe(handleLoggingFromApp);
+
+	const SDKGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.SDK,
+		EventType.Greeting,
+	);
+	expect(SDKGreetingMiddlewares.length).toBe(1);
+	expect(SDKGreetingMiddlewares[0]).toBe(handleGreetingFromSDK);
+
+	expect(
+		kernel.getChannelContext(ChannelId.SDK).eventsMap[EventType.Logging],
+	).toBe(undefined);
+
+	expect(kernel.getChannelContext(ChannelId.Widget)).toBe(undefined);
 });
 
 test('kernel with execute payload', () => {
@@ -236,56 +219,34 @@ test('kernel with first middlewares', () => {
 		.handle(EventType.Greeting)
 		.use(handleGreetingFromSDK);
 
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(2);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[1],
-	).toBe(handleGreetingFromApp);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging].middlewares
-			.length,
-	).toBe(2);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Logging]
-			.middlewares[1],
-	).toBe(handleLoggingFromApp);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(2);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[1],
-	).toBe(handleGreetingFromSDK);
-
-	expect(kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Logging]).toBe(
-		undefined,
+	const appGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.App,
+		EventType.Greeting,
 	);
+	expect(appGreetingMiddlewares.length).toBe(2);
+	expect(appGreetingMiddlewares[0]).toBe(decryptRequest);
+	expect(appGreetingMiddlewares[1]).toBe(handleGreetingFromApp);
 
-	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+	const appLoggingMiddlewares = kernel.getMiddlewares(
+		ChannelId.App,
+		EventType.Logging,
+	);
+	expect(appLoggingMiddlewares.length).toBe(2);
+	expect(appLoggingMiddlewares[0]).toBe(decryptRequest);
+	expect(appLoggingMiddlewares[1]).toBe(handleLoggingFromApp);
+
+	const SDKGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.SDK,
+		EventType.Greeting,
+	);
+	expect(SDKGreetingMiddlewares.length).toBe(2);
+	expect(SDKGreetingMiddlewares[0]).toBe(decryptRequest);
+	expect(SDKGreetingMiddlewares[1]).toBe(handleGreetingFromSDK);
+
+	const SDKChannelContext = kernel.getChannelContext(ChannelId.SDK);
+	expect(SDKChannelContext.eventsMap[EventType.Logging]).toBe(undefined);
+	const widgetChannelContext = kernel.getChannelContext(ChannelId.Widget);
+	expect(widgetChannelContext).toBe(undefined);
 });
 
 test('kernel with last middlewares', () => {
@@ -307,61 +268,31 @@ test('kernel with last middlewares', () => {
 		.use(encryptResponse)
 		.use(notify);
 
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(4);
+	const appGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.App,
+		EventType.Greeting,
+	);
+	expect(appGreetingMiddlewares.length).toBe(4);
+	expect(appGreetingMiddlewares[0]).toBe(decryptRequest);
+	expect(appGreetingMiddlewares[1]).toBe(handleGreetingFromApp);
+	expect(appGreetingMiddlewares[2]).toBe(encryptResponse);
+	expect(appGreetingMiddlewares[3]).toBe(notify);
 
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[1],
-	).toBe(handleGreetingFromApp);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[2],
-	).toBe(encryptResponse);
-
-	expect(
-		kernel.channelsMap[ChannelId.App].eventsMap[EventType.Greeting]
-			.middlewares[3],
-	).toBe(notify);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting].middlewares
-			.length,
-	).toBe(4);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[0],
-	).toBe(decryptRequest);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[1],
-	).toBe(handleGreetingFromSDK);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[2],
-	).toBe(encryptResponse);
-
-	expect(
-		kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Greeting]
-			.middlewares[3],
-	).toBe(notify);
-
-	expect(kernel.channelsMap[ChannelId.SDK].eventsMap[EventType.Logging]).toBe(
-		undefined,
+	const SDKGreetingMiddlewares = kernel.getMiddlewares(
+		ChannelId.SDK,
+		EventType.Greeting,
 	);
 
-	expect(kernel.channelsMap[ChannelId.Widget]).toBe(undefined);
+	expect(SDKGreetingMiddlewares.length).toBe(4);
+	expect(SDKGreetingMiddlewares[0]).toBe(decryptRequest);
+	expect(SDKGreetingMiddlewares[1]).toBe(handleGreetingFromSDK);
+	expect(SDKGreetingMiddlewares[2]).toBe(encryptResponse);
+	expect(SDKGreetingMiddlewares[3]).toBe(notify);
+
+	expect(
+		kernel.getChannelContext(ChannelId.SDK).eventsMap[EventType.Logging],
+	).toBe(undefined);
+	expect(kernel.getChannelContext(ChannelId.Widget)).toBe(undefined);
 });
 
 test('kernel with cross-resolving middlewares', async () => {

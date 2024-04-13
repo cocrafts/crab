@@ -1,5 +1,3 @@
-import { deepFreeze } from '../utils';
-
 import type {
 	KernelRequestContext,
 	Middleware,
@@ -13,8 +11,6 @@ import type {
  *
  * For a specific runtime, you need to override the `run` method to bootstrap the kernel.
  * The `run` method must link incoming channel request to pre-registered handlers via calling `execute`.
- *
- * Important: remember to call `super.run()` to prevent overwriting from request handling
  */
 export class Kernel<
 	ChannelId extends string | number = string,
@@ -24,10 +20,9 @@ export class Kernel<
 	 * This request pool supports cross-resolving requests
 	 * and detects unresolved the final middleware (dangling middleware)
 	 */
-	requestPool: Record<string, KernelRequestContext<EventType>> = {};
-	timer: never | null = null;
-
-	crossResolvingContext: Record<
+	private requestPool: Record<string, KernelRequestContext<EventType>> = {};
+	private timer: never | null = null;
+	private crossResolvingContext: Record<
 		string,
 		{
 			requestId: string;
@@ -35,9 +30,17 @@ export class Kernel<
 			reject: (error: Error | string) => void;
 		}
 	> = {};
+	private channelsMap: Record<ChannelId, ChannelContext<EventType>> =
+		{} as never;
+	private firstMiddlewares: Middleware<EventType>[] = [];
 
-	channelsMap: Record<ChannelId, ChannelContext<EventType>> = {} as never;
-	firstMiddlewares: Middleware<EventType>[] = [];
+	getChannelContext(channelId: ChannelId): ChannelContext<EventType> {
+		return this.channelsMap[channelId];
+	}
+
+	getMiddlewares(channelId: ChannelId, eventType: EventType): Middleware[] {
+		return this.channelsMap[channelId].eventsMap[eventType].middlewares;
+	}
 
 	/**
 	 * Directly register a channel
@@ -88,8 +91,8 @@ export class Kernel<
 	 * It's used to bootstrap the kernel
 	 */
 	run(cleanInterval?: number) {
-		deepFreeze(this);
 		this.startCleaner(cleanInterval);
+		// deepFreeze(this);
 	}
 
 	/**
@@ -250,7 +253,7 @@ export class Kernel<
 		const resolve = async <T>() => {
 			return new Promise((resolve, reject) => {
 				const timerId = setTimeout(() => {
-					reject(new Error(`Resolving ${resolveId} for ${requestId} timeout`));
+					reject(new Error(`Cross-resolving timeout`));
 					delete this.crossResolvingContext[resolveId];
 				}, timeout);
 
