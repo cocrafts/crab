@@ -1,10 +1,14 @@
 {
-  "extends": "@metacraft/tsconfig/application.json",
+  "extends": "@metacraft/tsconfig/base.json",
+  "include": ["src"],
+  "exclude": ["src/dist"],
   "compilerOptions": {
-    "baseUrl": "src",
-    "paths": {
-      "core": ["./core"],
-      "core/*": ["./core/*"]
-    }
+    "target": "es2018",
+    "moduleResolution": "node", // don't have to import actual filenames, can import extensionless files
+    "declaration": true, // generate .d.ts files
+    "sourceMap": true, // generate source map
+    "outDir": "src/dist", // output compiled js, d.ts, and source map to dist folder
+    "strict": true,
+    "esModuleInterop": true
   }
 }

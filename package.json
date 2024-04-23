@@ -9,7 +9,10 @@
   ],
   "scripts": {
     "test": "jest --passWithNoTests",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf src/dist",
+    "build": "yarn clean && tsc",
+    "publish": "cd src && npm publish --access public && cd .."
   },
   "author": "",
   "license": "MIT",
@@ -23,6 +26,7 @@
     "eslint": "^8.0.0",
     "jest": "^29.7.0",
     "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
     "typescript": "5.3.3"
   }
 }

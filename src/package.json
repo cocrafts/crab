@@ -1,10 +1,17 @@
 {
   "name": "@metacraft/crab",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "author": "",
+  "version": "0.0.2",
+  "description": "A universal messaging library for cross-platform applications",
+  "author": "https://metacraft.studio",
   "license": "MIT",
+  "files": [
+    "core",
+    "chrome",
+    "web",
+    "mobile",
+    "embed",
+    "utils"
+  ],
   "devDependencies": {
     "@types/chrome": "^0.0.266"
   }
