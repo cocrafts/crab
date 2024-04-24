@@ -327,6 +327,15 @@ export class Kernel<
 			respond({ message: 'ok' });
 		}
 	};
+
+	getRequestByResolveId(resolveId: string) {
+		const resolvingContext = this.crossResolvingContext[resolveId];
+		if (!resolvingContext) {
+			return { error: 'Can not find context for cross-resolving' };
+		} else {
+			return this.requestPool[resolvingContext.requestId];
+		}
+	}
 }
 
 export type ChannelContext<EventType extends string | number> = {
