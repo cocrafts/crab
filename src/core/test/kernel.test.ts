@@ -1,5 +1,5 @@
 import { Kernel } from '../kernel';
-import type { Middleware } from '../types';
+import type { KernelRequestContext, Middleware } from '../types';
 
 enum ChannelId {
 	App,
@@ -11,6 +11,7 @@ enum EventType {
 	Greeting,
 	Logging,
 	ApproveGreeting,
+	RequestPayload,
 }
 
 test('kernel with middlewares', () => {
@@ -362,18 +363,18 @@ test('kernel with cross-resolving middlewares', async () => {
 	);
 });
 
-test('kernel with cross-resolving middlewares - resolving timeout', async () => {
+test('kernel with cross-resolving middlewares - resolving timeout', (done) => {
 	const kernel = new Kernel<ChannelId, EventType>();
 
+	let resolveId: string;
 	const askForApprovalFromApp: Middleware<EventType> = async (
 		request,
 		respond,
 		next,
 	) => {
-		const { resolveId, resolve } = kernel.createCrossResolvingRequest(
-			request.id,
-			100,
-		);
+		const { resolveId: innerResolveId, resolve } =
+			kernel.createCrossResolvingRequest(request.id, 100);
+		resolveId = innerResolveId;
 
 		// call resolving from another channel here
 		mockResolvingFromApp(resolveId);
@@ -385,6 +386,20 @@ test('kernel with cross-resolving middlewares - resolving timeout', async () => 
 		} else {
 			next?.(request);
 		}
+	};
+
+	const askForPayloadFromApp = (
+		kernel: Kernel<ChannelId, EventType>,
+	): Middleware<EventType> => {
+		return async (request, respond) => {
+			const { resolveId } = request;
+			if (!resolveId) {
+				respond({ error: 'resolveId is undefined' });
+			} else {
+				const sourceRequest = kernel.getRequestByResolveId(resolveId);
+				respond(sourceRequest);
+			}
+		};
 	};
 
 	const mockResolvingFromApp = (resolveId: string) => {
@@ -416,23 +431,45 @@ test('kernel with cross-resolving middlewares - resolving timeout', async () => 
 		.use(handleGreetingFromSDK)
 
 		.channel(ChannelId.App)
+		.handle(EventType.RequestPayload)
+		.use(askForPayloadFromApp(kernel))
 		.handle(EventType.ApproveGreeting)
 		.use(kernel.handleCrossResolvingMiddleware);
 
-	await kernel.execute(
+	kernel.execute(
 		ChannelId.SDK,
 		{
 			id: crypto.randomUUID(),
 			type: EventType.Greeting,
 			timeout: 1000,
+			message: 'Request from SDK',
 		},
 		(response) => {
 			expect(response.error).toBeTruthy();
 		},
 	);
-
-	// to avoid jest timeout
-	await new Promise((resolve) => setTimeout(resolve, 300));
+	setTimeout(() => {
+		kernel.execute(
+			ChannelId.App,
+			{
+				id: crypto.randomUUID(),
+				type: EventType.RequestPayload,
+				timeout: 1000,
+				resolveId: resolveId,
+			},
+			(response) => {
+				try {
+					const {
+						request: { message },
+					} = response as KernelRequestContext<EventType>;
+					expect(message).toEqual('Request from SDK');
+					done();
+				} catch (error) {
+					done(error);
+				}
+			},
+		);
+	}, 0);
 });
 
 test('kernel with cross-resolving middlewares - request timeout by late cross-resolving', async () => {
