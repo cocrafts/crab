@@ -36,6 +36,7 @@ export type RequestContext = {
 };
 
 export type KernelRequestContext<EventType = string> = {
+	channelId: string | number;
 	timeout: number;
 	request: Request<EventType>;
 	receivedAt: Date;

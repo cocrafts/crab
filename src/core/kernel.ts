@@ -183,6 +183,7 @@ export class Kernel<
 
 		const defaultTimeout = 1000;
 		this.requestPool[request.id] = {
+			channelId,
 			request,
 			receivedAt: new Date(),
 			// do I need to setTimeout to automatically clean it up?
@@ -335,6 +336,10 @@ export class Kernel<
 		} else {
 			return this.requestPool[resolvingContext.requestId];
 		}
+	}
+
+	getRequestContext(requestId: string) {
+		return this.requestPool[requestId];
 	}
 }
 
