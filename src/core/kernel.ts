@@ -28,6 +28,7 @@ export class Kernel<
 			requestId: string;
 			resolve: (value: unknown) => void;
 			reject: (error: Error | string) => void;
+			resolveCallback?: Middleware;
 		}
 	> = {};
 	private channelsMap: Record<ChannelId, ChannelContext<EventType>> =
@@ -248,7 +249,11 @@ export class Kernel<
 		await execute(request, middlewares);
 	}
 
-	createCrossResolvingRequest(requestId: string, timeout: number = 1000) {
+	createCrossResolvingRequest(
+		requestId: string,
+		timeout: number = 1000,
+		resolveCallback?: Middleware,
+	) {
 		const resolveId = crypto.randomUUID();
 
 		const resolve = async <T>() => {
@@ -270,6 +275,7 @@ export class Kernel<
 						clearTimeout(timerId);
 						delete this.crossResolvingContext[resolveId];
 					},
+					resolveCallback,
 				};
 			}) as T;
 		};
@@ -312,7 +318,7 @@ export class Kernel<
 		clearInterval(this.timer as never);
 	}
 
-	handleCrossResolvingMiddleware: Middleware = (request, respond) => {
+	handleCrossResolvingMiddleware: Middleware = async (request, respond) => {
 		const { resolveId } = request;
 		if (!resolveId) {
 			respond({ error: 'Can not find resolveId in request' });
@@ -323,9 +329,13 @@ export class Kernel<
 		if (!resolvingContext) {
 			respond({ error: 'Can not find context for cross-resolving' });
 		} else {
-			const { resolve } = resolvingContext;
-			resolve(request);
-			respond({ message: 'ok' });
+			const { resolve, resolveCallback } = resolvingContext;
+			if (!resolveCallback) {
+				resolve(request);
+				respond({ message: 'ok' });
+			} else {
+				await resolveCallback(request, respond, resolve);
+			}
 		}
 	};
 
