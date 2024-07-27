@@ -1,3 +1,4 @@
+import type { Request } from '../core';
 import { Kernel } from '../core/kernel';
 
 /**
@@ -19,7 +20,14 @@ export class ChromeKernel<
 		chrome.runtime.onConnect.addListener((port) => {
 			const channelId = port.name as ChannelId;
 			port.onMessage.addListener((message, port) => {
-				this.execute(channelId, message, (payload) => {
+				let payload: Request<EventType>;
+				if (typeof message === 'object') {
+					payload = { ...message, context: port.sender };
+				} else {
+					payload = message;
+				}
+
+				this.execute(channelId, payload, (payload) => {
 					port.postMessage(payload);
 				});
 			});

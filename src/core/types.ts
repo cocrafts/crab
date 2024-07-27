@@ -1,6 +1,7 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Middleware<EventType = any, RequestPayload = any> = (
-	request: Request<EventType, RequestPayload>,
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+export type Middleware<EventType = any, RequestPayload = any, Context = any> = (
+	request: Request<EventType, RequestPayload, Context>,
 	respond: (response: RawResponse) => void,
 	next?: (request: Request<EventType, RequestPayload>) => void,
 ) => Promise<void> | void;
@@ -9,13 +10,21 @@ export type RawRequest<Type = string, Payload = Record<string, unknown>> = {
 	type: Type;
 } & Payload;
 
-export type Request<Type = string, Payload = Record<string, unknown>> = {
+export type Request<
+	Type = string,
+	Payload = Record<string, unknown>,
+	Context = any,
+> = {
 	id: string;
 	/**
 	 * timeout is always passed in the request,
 	 * any timeout-aware middleware can use this one to prevent unexpected retrying/looping
 	 */
 	timeout: number;
+	/**
+	 * Source Context request, e.g. MessageSender for chrome runtime
+	 */
+	context?: Context;
 } & RawRequest<Type, Payload>;
 
 export type RawResponse<Payload = Record<string, unknown>> = {
